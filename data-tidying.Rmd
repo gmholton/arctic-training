@@ -29,6 +29,39 @@ regions <- read.csv('https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.30
 head(regions)
 ```
 
+Begin data cleanup
+
+* remove marginal sum and notes col
+* move from wide to long format
+```{r}
+catch_long <- catch %>% 
+  select(-All,-notesRegCode) %>%  
+  gather(key="species", value="catch", -Year, -Region) 
+    # don't gather on year or region
+    # could also just specify species columns to gather on
+head(catch_long)
+```
+
+Check for bad data
+```{r}
+test_catch <- as.integer(catch_long$catch)
+catch_long[which(is.na(test_catch) == T),]
+```
+
+
+```{r}
+# catch_cleaned <- catch_long %>%
+#  rename(catch_thousands = catch) %>%
+#  mutate(catch = catch_thousands*1000)
+#head(catch_cleaned)
+```
+
+```{r}
+catch_sum <- catch %>%
+  mutate(sum = Chinook + Coho + Pink + Sockeye + Chum) %>%
+  rename(all = All) %>%
+  select(Region, Year, sum, all)
+```
 
 #Split-Apply-Combine
 
