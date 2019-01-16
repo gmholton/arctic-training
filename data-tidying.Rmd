@@ -43,27 +43,105 @@ head(catch_long)
 ```
 
 Check for bad data
-```{r}
+```{r, eval=F, echo=F}
 test_catch <- as.integer(catch_long$catch)
 catch_long[which(is.na(test_catch) == T),]
 ```
 
-
 ```{r}
-# catch_cleaned <- catch_long %>%
-#  rename(catch_thousands = catch) %>%
-#  mutate(catch = catch_thousands*1000)
-#head(catch_cleaned)
+catch_cleaned <- catch_long %>%
+  rename(catch_thousands = catch) %>%
+  mutate(catch_thousands = ifelse(catch_thousands == "I", 1, catch_thousands)) %>%
+  mutate(catch_thousands = as.integer(catch_thousands)) %>%
+  mutate(catch = catch_thousands * 1000)
 ```
 
-```{r}
+
+
+compare sum to "all"" column
+
+```{r, eval=F, echo=F}
 catch_sum <- catch %>%
+  mutate(Chinook = ifelse(Chinook == "I", 1, Chinook)) %>%
+  mutate(Chinook = as.integer(Chinook) ) %>%
   mutate(sum = Chinook + Coho + Pink + Sockeye + Chum) %>%
   rename(all = All) %>%
   select(Region, Year, sum, all)
+
+head(catch_sum)
 ```
+
+
+Check what species exist: (this wasn't in the excercise)
+```{r}
+summarize(group_by(catch_cleaned,species),n())
+```
+
+
 
 #Split-Apply-Combine
 
+Calculate total catch by region
+```{r}
+catch_total <- catch_cleaned %>%
+  group_by(Region) %>%
+  summarize(catch_region = sum(catch))
+catch_total
+
+```
+
+The function n() with no arguments gives count within each group
+```{r}
+catch_total_obs <- catch_cleaned %>%
+  group_by(Region) %>%
+  summarize(catch_region = sum(catch), n_obs=n() )
+catch_total_obs
+
+```
+
+
+Calculate yearly means
+```{r}
+catch_yearly <- catch_cleaned %>%
+  group_by(Year) %>%
+  summarize(catch_year = as.integer(mean(catch)), n())
+catch_yearly
+```
+
+Filter for one species:
+```{r}
+catch_chinook <- catch_cleaned %>%
+  filter(species == "Chinook")
+head(catch_chinook)
+```
+
+Filter for one species in a particular region:
+```{r}
+catch_chinook_SSE <- catch_cleaned %>%
+  filter(species == "Chinook" & Region == "SSE")
+head(catch_chinook_SSE)
+```
+
+Change sort order in data frame:
+```{r}
+catch_chinook_SSE <- catch_chinook_SSE %>% arrange(-Year)
+head(catch_chinook_SSE)
+```
+
+
+
 #Joins
+
+First get the region definitions
+```{r}
+regions_clean <- regions %>%
+  select(code, mgmtArea)
+```
+
+```{r}
+catch_joined <- left_join(catch_cleaned, regions_clean, 
+                          by=c("Region" = "code") )
+head(catch_joined)
+```
+
 
