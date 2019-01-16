@@ -1,0 +1,36 @@
+---
+title: "Data Tidying"
+author: "Gary Holton"
+date: "1/16/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, root.dir = '~/Downloads/NCEAS/git/adc/')
+```
+
+Load packages for this session (suppress warming message)
+```{r,  message=FALSE}  
+library(dplyr)
+library(tidyr)
+```
+To call a funciton from a specific package use: package_name::function_name()
+
+#Data Cleaning
+
+Read in data files
+```{r}
+catch <- read.csv('https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.302.1',
+                  stringsAsFactors = FALSE)
+head(catch)
+
+regions <- read.csv('https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.303.1', 
+                    stringsAsFactors = FALSE)
+head(regions)
+```
+
+
+#Split-Apply-Combine
+
+#Joins
+
