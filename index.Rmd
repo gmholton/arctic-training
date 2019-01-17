@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Data Visualization Tutorial"
 author: "Gary Holton"
 date: "1/17/2019"
 output: html_document
@@ -9,22 +9,101 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+Load packages:
+```{r message=F}
+library(leaflet)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(DT)   # dynamic tables
 ```
 
-## Including Plots
+## Arctic Data Training
 
-You can also embed plots, for example:
+### Data Visualization
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+Data from:
+https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af119a05b-bbe7-4aea-93c6-85434dcb1c5e
+
+
+```{r}
+esc <- read.csv('https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af119a05b-bbe7-4aea-93c6-85434dcb1c5e', stringsAsFactors = F)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Calculate annual, regional, total salmon escapements
+
+* `separate` the date into year, month, day
+* `group_by` and `summarize` to get sum over unique region-year-species combinations
+* `filter` out non-salmon species
+```{r}
+annual <- esc %>%
+  separate(sampleDate, into = c("year","month", "day")) %>%
+  mutate(year = as.integer(year)) %>%
+  group_by(SASAP.Region, Species, year) %>%
+  summarize(escapement =sum(DailyCount)) %>%
+  filter(Species %in% c("Chinook", "Sockeye", "Pink", "Chum", "Coho"))
+#head(annual)
+```
+
+
+
+
+
+Make a dynamic table:
+```{r}
+datatable(annual)
+```
+## Static Plots
+
+The R package colorbrewer can customize colors
+```{r}
+ggplot(data = annual, mapping = aes(x = Species, y = escapement, fill = SASAP.Region )) +
+  geom_col()
+```
+
+```{r}
+ggplot( filter(annual, SASAP.Region == "Kodiak"), 
+    aes(year, escapement, color=Species)) +
+     geom_point() + 
+     xlab("Year") + ylab("Escapement") +
+    ggtitle("Kodiak Salmon Escapement")
+    #theme(plot.title = element_text(h))
+
+```
+
+### Time series
+
+Plot time series of escapement by species for all regions
+```{r, fig.height = 10, fig.width=6}
+my_theme <- theme_bw() + theme(plot.title = element_text(hjust=0.5))
+ggplot(annual, aes(year,escapement, color=Species)) +
+  geom_line() +
+  geom_point() +
+  my_theme +
+  facet_wrap(~SASAP.Region, scales="free_y", ncol=2) 
+#ggsave("region_escapement.pdf", width=8.5, height=11, units="in")
+```
+Package gridExtra can be used for arranging plots of different types together (as opposed to `facet_wrap` which puts all of the same kind of plot together)
+
+
+
+
+
+## Maps
+Read in location data and use `drop_na` to get rid of rows with missing data. (Warning: this would also drop rows where Location name is NA)
+```{r}
+locations <- esc %>%
+  distinct(Location, Latitude, Longitude) %>%
+  drop_na()
+```
+
+Not create the map
+```{r}
+leaflet(locations) %>%
+  addTiles() %>%
+  addMarkers(lng=~Longitude, lat = ~Latitude, popup = ~Location)
+```
+
+
+
